@@ -1,0 +1,481 @@
+---
+title: "Práctica 3 - Análisis de Riesgo"
+author: "Carlos K. Delgado"
+date: "17/6/2018"
+output: 
+  prettydoc::html_pretty:
+    theme: leonids
+---
+
+```{r setup, include=FALSE, warning = FALSE}
+# install.packages(c("knitr", "rmarkdown"),  repos = "http://cran.us.r-project.org")
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages("VIM", repos = "http://cran.us.r-project.org")
+# install.packages("mice", repos = "http://cran.us.r-project.org")
+# install.packages("plotly", repos = "http://cran.us.r-project.org")
+# install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+# install.packages("pastecs", repos = "http://cran.us.r-project.org")
+# install.packages("psych", repos = "http://cran.us.r-project.org")
+# install.packages("GGally", repos = "http://cran.us.r-project.org")
+# install.packages("glmnet", repos = "http://cran.us.r-project.org")
+# install.packages("purrr", repos = "http://cran.us.r-project.org")
+# install.packages("plm", repos = "http://cran.us.r-project.org")
+# install.packages("broom", repos = "http://cran.us.r-project.org")
+# install.packages("xtable", repos = "http://cran.us.r-project.org")
+# install.packages("robustHD", repos = "http://cran.us.r-project.org")
+# install.packages("pglm", repos = "http://cran.us.r-project.org")
+# install.packages("prediction", repos = "http://cran.us.r-project.org")
+# install.packages("ROCR", repos = "http://cran.us.r-project.org")
+# install.packages("Metrics", repos = "http://cran.us.r-project.org")
+# install.packages("caret", repos = "http://cran.us.r-project.org")
+# install.packages("devtools", repos = "http://cran.us.r-project.org")
+# install.packages("pROC", repos = "http://cran.us.r-project.org")
+# install.packages("plyr", repos = "http://cran.us.r-project.org")
+# install.packages("MLmetrics", repos = "http://cran.us.r-project.org")
+# install.packages("precrec", repos = "http://cran.us.r-project.org")
+# install.packages("PRROC", repos = "http://cran.us.r-project.org")
+# install.packages("DiagrammeR", repos = "http://cran.us.r-project.org")
+# install.packages("party", repos = "http://cran.us.r-project.org")
+# install.packages("mlr", repos = "http://cran.us.r-project.org")
+library(tidyverse)
+library(VIM)
+library(mice)
+library(plotly)
+library(pastecs)
+library(psych)
+library(GGally)
+library(glmnet)
+library(purrr)
+library(plm)
+library(broom)
+library(xtable)
+library(robustHD)
+library(pglm)
+library(prediction)
+library(ROCR)
+library(Metrics)
+library(caret)
+library(devtools)
+library(pROC)
+library(plyr)
+library(MLmetrics)
+library(precrec)
+library(PRROC)
+library(DiagrammeR)
+library(party)
+library(mlr)
+```
+
+##Modelo de predicción de riesgo de crédito para el año 2018 (12 meses).
+
+###Lectura y unión de las bases de datos
+
+```{r}
+## Cargamos el directorio
+setwd("~/Desktop/Máster en Big Data/Análisis del Riesgo de Crédito/Prueba 3")
+
+## Lectura de los datos
+
+#coste_mercancias <- read.table("coste_mercaderias.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#existencias <- read.table("existencias.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#deudores <- read.table("deudores.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#inmovilizado_inm <- read.table("inmovilizado_inm.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#inmovilizado_mat <- read.table("inmovilizado_mat.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#intereses <- read.table("intereses.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#n_empleados <- read.table("n_empleados.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#pasivo_fijo <- read.table("pasivo_fijo.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#pasivo_liq <- read.table("pasivo_liq.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#rdo_ejercicio <- read.table("rdo_ejercicio.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#acreed_ciales <- read.table("acreed_ciales.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#ig_explo <- read.table("ig_explo.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#acreed_lp <- read.table("acreed_lp.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#activo_circ <- read.table("activo_circ.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#bai <- read.table("bai.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#clientes <- read.table("clientes.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#deudas_financ <- read.table("deudas_financ.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#ffpp <- read.table("ffpp.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#tesoreria <- read.table("tesoreria.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#inmovilizado <- read.table("inmovilizado.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#total_activo <- read.table("total_activo.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+#amortizacion <- read.table("amortizacion.txt", stringsAsFactors = FALSE, sep = '\t', header = TRUE)
+
+## Unimos los datos: las claves primarias son el "nif" y "year"
+## Creamos una lista con las bases de datos a unir y despues utilizaremos un full_join por nif y año,
+## guardo el data set como "data"
+
+#data <- list(coste_mercancias, existencias, deudores, inmovilizado, inmovilizado_inm, inmovilizado_mat,
+ #            intereses, n_empleados, pasivo_fijo, pasivo_liq, rdo_ejercicio, acreed_ciales, ig_explo, 
+  #           acreed_lp, activo_circ, bai, clientes, deudas_financ, ffpp, tesoreria, total_activo, 
+   #          amortizacion) %>%
+  #reduce(full_join, by = c("nif", "year"))
+
+## Guardo la base de datos para no tener que ejecutar de nuevo las lecturas de las bases de datos
+#save(data, file = "data.RData")
+
+## Cargamos la base de datos guardada como un objeto RData
+load("data.RData")
+```
+
+###Análisis y tratamiento de los datos
+
+```{r, warning=FALSE}
+## trasformamos los datos en un panel de datos, uso la lirería "plm"
+data.panel <- data %>% pdata.frame(index = c("nif", "year")) %>%
+  group_by(nif, year) %>% as_data_frame()
+
+## generamos los ratios de interés
+data.panel <- data.panel %>%
+  mutate(ratio_endeudamiento = (pasivo_liq + acreed_lp) / total_activo, 
+         ratio_rotacion = ig_explo / total_activo,
+         ratio_tesoreria = activo_circ / pasivo_liq,
+         roa = rdo_ejercicio / total_activo,
+         roe = rdo_ejercicio / ffpp
+         )
+
+
+data.panel.p <- data.panel %>%
+  group_by(nif, year) %>% 
+  filter(nif != "A01000116") %>% ## La primera empresa no tiene datos la quito
+  pdata.frame(replace.non.finite = T)
+
+pdim(data.panel.p)
+
+## genero la variable f.total_activo (para evaluar las empresas que hace default respecto a ella)
+## función lead es el de la libreria "plm""
+data.panel.p$f.total_activo <- plm::lead(data.panel.p$total_activo, k = 1, shift = "year")
+
+## genero la variable default
+data.panel.p$default <- ifelse(is.na(data.panel.p$f.total_activo), 1, 0)
+
+## seleccionamos las variables de interés, filtramos los datos exceptuando el último año 2017
+data.panel.a <- data.panel.p %>%
+  select(nif, year, default, ratio_endeudamiento, ratio_rotacion, ratio_tesoreria, roa, roe)
+
+## Quito las observaciones del último año, 2017
+data.panel.a <- data.panel.a[!(data.panel.a$year == 2017), ]
+
+
+## Eliminamos las filas que tienen el ratio de endudamiento > 1
+data.panel.a <- data.panel.a[!(data.panel.a$ratio_endeudamiento > 1), ]
+```
+
+
+###Tratamiento de outliers
+
+####1. Visualización
+
+```{r}
+## Creo una función para identificar los outliers y eliinarlos
+outliers.data <- function(dt, var, titulo) {
+     var_name <- eval(substitute(var),eval(dt))
+     na1 <- sum(is.na(var_name))
+     m1 <- mean(var_name, na.rm = T)
+     par(mfrow=c(2, 2), oma=c(0,0,3,0))
+     boxplot(var_name, main="Con Outliers")
+     hist(var_name, main="Con Outliers", xlab=NA, ylab=NA)
+     outlier <- boxplot.stats(var_name)$out ## Con esta función detecto los outliers más significactivos
+     mo <- mean(outlier)
+     var_name <- ifelse(var_name %in% outlier, NA, var_name) ## Elimino outliers
+     boxplot(var_name, main="Sin outliers")
+     hist(var_name, main="Sin outliers", xlab=NA, ylab=NA)
+     title(titulo, outer=TRUE)
+}
+
+```
+
+####Outliers en el ratio_endeudamiento
+
+```{r}
+outliers.data(data.panel.a, data.panel.a$ratio_endeudamiento, titulo = "Outliers - Ratio de Endeudamiento")
+```
+
+Observamos que la funcion que he creado funciona correctament, y en el ratio de endeudamiento no hay Outliers, como se muestra los gráficos no hay varianción. Es lógico teniendo en cuenta que ya eliminamos los valores superiores a 1.
+
+####Outliers en el ratio_rotación
+
+```{r}
+outliers.data(data.panel.a, data.panel.a$ratio_rotacion, titulo = "Outliers - Ratio de Rotación")
+```
+
+
+####Outliers en el ratio_tesoreria
+
+```{r, warning=FALSE}
+outliers.data(data.panel.a, data.panel.a$ratio_tesoreria, titulo = "Outliers - Ratio de Tesorería")
+```
+
+####Outliers en el ROA
+
+```{r}
+outliers.data(data.panel.a, data.panel.a$roa, titulo = "Outliers - Ratio ROA")
+```
+
+####Outliers en el ROE
+
+```{r}
+outliers.data(data.panel.a, data.panel.a$roe, titulo = "Outliers - Ratio ROE")
+```
+
+**De este modo podemos observar fácilmente que variables necesitan tratamiento, en el siguente paso voy a winsorizar los datos usando los percentiles 99% y 1% de cada datos, ya que el método que he utilizado para visualizar y descartar outliers nos eliminaría muchas observaciones y creo que no conviene ser un poco flexible, ya que hay algunos valores extremos que si que pueden ser posibles en la vida real.**
+
+
+####2. Winzorización de Outliers
+
+```{r, warning=FALSE}
+## Winsorización: Replazo las observaciones extremas por los valores de los percentiles 99% y 1%
+winsorize.data = function(x, q = 0.01){
+  quantil_superior <- quantile(x, 1 - q, na.rm = F)
+  quantil_inferior <- quantile(x, q, na.rm = F)
+  i = which(x >= quantil_superior) 
+  x[i] = quantil_superior
+  j = which(x <= quantil_inferior) 
+  x[j] = quantil_inferior
+  return(x)
+}
+
+
+## Aplico mi función winsorización a mis variables de interés
+data.panel.w <- data.panel.a %>% na.omit() %>%
+  mutate_at(vars(ratio_rotacion, ratio_tesoreria, roa, roe), funs(winsorize.data)) %>%
+  pdata.frame(index = c("nif", "year"))
+
+## algunas pruebas si hay missing values
+#anyNA(data.panel.w$default)
+#countNA(data.panel.w$default)
+#data.panel.w %>% filter(is.na(default))
+```
+
+**Tras el proceso de limpieza de datos y de winsorización, se observa que los datos han quedado más normalizado. el panel de datos resultante ha quedado con una dimensión de 20,008 observaciones y 8 variables. Entre missing values y datos que no cumplian con los criterios especificados en el proceso se han prescindido de 9,506 observaciones, y solos nos hemos quedado con las variables de interes en nuestro modelo**
+
+###Especificación del modelo
+
+####1. Dividimos los datos en training y testing
+```{r}
+data.model <- as_data_frame(data.panel.w)
+nID <- length(unique(data.model$nif)) ## genero el número de nif únicos
+p = 0.70 ## Separo el datas ser en 70% Training y 30% Testing
+set.seed(1234) ## Hacemos que la aletoriedad de la división sea reproducible
+## Amplico el sample aleatorio por nif y sin remplazo para mantener muestras independientes
+inTrainID <- sample(unique(data$nif), round(nID * p), replace=FALSE) 
+training <- data.panel.w[data.model$nif %in% inTrainID, ]
+testing <- data.panel.w[!data.model$nif %in% inTrainID, ]
+training$default <- as.factor(training$default)
+testing$default <- as.factor(testing$default)
+
+### realizo alguna pruebas para ver como se han dividido los datos
+# levels(training$default)
+# levels(testing$default)
+
+## Porcentaje de defaults y no default en cada partición
+## En el paned de datos general:
+table(data.model$default) / nrow(data.model)
+
+## En la partición de training:
+table(training$default) / nrow(training)
+
+## En la partición de testing:
+table(testing$default) / nrow(testing)
+
+```
+
+**Observamos que los datos conservan las proporciones adecuadas en cada partición, tanto para training como para testing. El único problema que veo es que como es lógico los datos no estan balanceados. El 93% de los datos son No Default y el 7% restante son default. Deberiamos balancear los datos para obtener una curva ROC adecuada, porque por probabilidad si apostamos por que no va cometer default y le concedemos el crédito, estarémos prediciendo bien el 93% de los casos en esta muestra, y podriamos llegar a pensar que nuestro modelo predice super bien, con AUC de valores próximos a 1.**
+
+
+
+####2. Generanción de modelo training
+
+#####Opción A. Resultados sin balancear los datos:
+
+#####Modelo 1 - con todas las variabels
+```{r}
+## Voy a asignarle factores al default, para que quede más claro cuando es Default = "Yes" & No Default = "No"
+training$default <- factor(training$default, labels = c("No", "Yes"))
+testing$default <- factor(testing$default, labels = c("No", "Yes"))
+```
+
+```{r, warning=FALSE}
+## Asignamos número de folds de k-veces cross-validation, de este modelos los estadísticos serán más consisitentes
+folds = 10
+
+## Fijamos el parámetro de control, nos aplicará CV, le indicamos que queremos el resumen para las dos categorias
+## Además le indicamos que queremos guardar las predicciones - correponderan a las In Sample.
+fitControl <- trainControl(method = 'cv', 
+                           number = folds,
+                           classProbs = TRUE,
+                           summaryFunction = twoClassSummary,
+                           savePrediction = TRUE)
+
+## Preprocesamiento de datos para regularizar                         
+
+## MODELO LOGÍSTICO 1: con todos los ratios
+set.seed(1234) ##para que los datos sean reproducibles
+logistic.M1 <- caret::train(default ~ ratio_endeudamiento + ratio_rotacion + ratio_tesoreria + roa 
+                            + roe, data = training,
+                            method = "glm", family = binomial, 
+                            metric = "ROC", ## Le indico que quiero el area debajo la curva ROC
+                            trControl = fitControl)
+summary(logistic.M1)
+
+```
+
+**En el modelos completo observamos que hay variables no significativas como son, el ratio de rotación o el ratio de tesorería, en el siguiente paso voy a ir quitando las variables menos significaticas de una en una hasta que me quede un modelo conjuntamente sifnificativo. En cuanto a las variables que si que son significativas a más de 99% de confianza, tienen el signo que esperamos, por ejemplos: a mayor ratio de endeudamiento mayor probabilidad de default, o por ejemplo a mayor ROA menor será la probabilidad de default**
+
+#####Modelo 2 - Prescindiendo de las variables no significativos. (elinino una en cada paso)
+```{r, warning=FALSE}
+## MODELO LOGÍSTICO 2: Elinimando variables no significativas paso a paso
+set.seed(1234) ##para que los datos sean reproducibles
+logistic.M2 <- caret::train(default ~ ratio_endeudamiento + roa + roe,
+                            data = training,
+                            method = "glm", family = binomial, 
+                            metric = "ROC", ## Le indico que quiero el area debajo la curva ROC
+                            trControl = fitControl)
+summary(logistic.M2)
+```
+
+**El modelo obtenido es el siguiente:**
+
+*default ~ ratio_endeudamiento + roa + roe*
+
+**Todas las variables son significativas a un nivel de significación del 1%, y los signos son acordes a lo esperado y al marco económico teórico.**
+
+### Pasamos a obtener los valores de las métricas 
+```{r, warning=FALSE}
+### Classificación de las probabilidades - Modelo Lógistico ### Datos TRAIN ###
+class.train <- data.frame(obs = logistic.M2$pred$obs,
+                         Yes = c(logistic.M2$pred$Yes))
+
+## Como los datos no estan balanceados el punto de corte de probabilidad es muy bajo
+class.train$No <- 1 - class.train$Yes
+class.train$pred <- factor(ifelse(class.train$Yes >= 0.05, "Yes", "No"))
+
+### Probabilidades del Modelo Logístico ### Datos TRAIN ###
+ggplot(class.train, aes(x = Yes)) + 
+  geom_histogram(binwidth = .001) + 
+  facet_wrap(~ obs) + 
+  xlab("Probability of Default")
+```
+
+Observamos que el modelo no parece que sea el más idoneo para clasificar, pero si somo el banco y nos preocupa el default podemos fijar el corte a partir del 0.05 de probailidad de eso modo clasificaremos bien la mayoria de que si que son default.
+
+
+####Matriz de confusión
+```{r, warning=FALSE}
+### Métricas para el modelo lógistico ### Datos TRAIN ###
+confusionMatrix(data = class.train$pred, reference = class.train$obs, mode = "everything", positive = "Yes")
+```
+
+*De este modo observamos que predecimos In Sample con un punto de corte 0.05 del 85,46% de los Defaults, el único problemas es que como nuestro modelo no esta balanceado correctamente no es capaz de distinguir o diferenciar correctamente los dos grupos. Por eso el nivel la clase mayoritaria tiene un alto coste de oportunidad prediciendo correctamente tan solo el 20,72% de los datos.*
+
+#### ROC
+
+
+```{r, warning=FALSE}
+rocurve_M2 <- roc.curve(scores.class0 = class.train$pred, scores.class1 = class.train$obs, curve = T)
+##Obtenemos un area bajos la curva
+rocurve_M2
+
+##Ploteamos el ROC
+plot(rocurve_M2)
+```
+
+**Observamos que el área bajo la curba es es bastante óptimom, pero es una falsa apariencia, ya que si ponemos la linea base en que si classificamos correcatamente 93% de las empresas si a todas le asignamos No Default, de hecho lo interesante en el gráfico es el primer tramo donde asciende rápidamente y a partir del 0.1% de probailidad ya empiezas a asignar a todos No Default.**
+
+
+#### Valoración del modelo Out of Sample:
+
+```{r, warning=FALSE}
+### Predicción de los datos sobre los datos testing Modelo lógistico:
+pred.logistic.M2 <- predict(logistic.M2, newdata = testing, type = "prob")
+
+### Classificación de las probabilidades - Modelo Lógistico ### Datos TEST ###
+class.test <- data.frame(obs = testing$default,
+                         Yes = c(pred.logistic.M2$Yes))
+
+class.test$No <- 1 - class.test$Yes
+class.test$pred <- factor(ifelse(class.test$Yes >= 0.05, "Yes", "No"))
+
+### Probabilidades del Modelo Logístico ### Datos TEST ###
+ggplot(class.test, aes(x = Yes)) + 
+  geom_histogram(binwidth = .001) + 
+  facet_wrap(~ obs) + 
+  xlab("Probability of Default")
+```
+
+**Observamos que las distribuciones de probabilidad son muy parecidad con el modelo Out Sample, y se sigue produciendo ese problema en el cual no diferenciamos bien a los Default de los No Defaults**
+
+```{r, warning=FALSE}
+### Métricas para el modelo lógistico ### Datos TEST ###
+confusionMatrix(data = class.test$pred, reference = class.test$obs, mode = "everything", positive = "Yes")
+```
+
+```{r, warning=FALSE}
+rocurve_M2_test <- roc.curve(scores.class0 = class.test$pred, scores.class1 = class.test$obs, curve = T)
+##Obtenemos un area bajos la curva
+rocurve_M2_test
+
+##Ploteamos el ROC
+plot(rocurve_M2_test)
+```
+
+**El Área debajo de la curva obtenido para los datos de testing es muy parecido al de los datos de training. Cabe decir que aun así no es un buen modelo predictivo ya que no conseguimos diferenciar bien a los buenos de los malos, ya que la funciones de probabilidad que asígna a cada individuo se solpan mucho tanto en los datos de entrenamiento como en los datos de test. He procurado poner un punto de corte bastante bajo para así detectar mejor a los malos, pero esto generá un gran coste de oportunidad no clasificando bien a muchas empresas que si que son buenas.**
+
+
+#### Z-Score de Altman
+```{r}
+Zscore <- data.panel.p %>% 
+  group_by(nif, year) %>%
+  mutate(X1 = (activo_circ - pasivo_liq)/total_activo, X2 = rdo_ejercicio/total_activo, X3 = (bai + intereses)/total_activo, X4 = 1, X5 = ig_explo / total_activo) %>% 
+  mutate(ZScore.value = 1.2*X1 + 1.4*X2 + 3.3*X3 + 0.6*X4 + 1.0*X5) %>% 
+  select(nif, year, X1, X2, X3, X4, X5, ZScore.value, default) %>% 
+  pdata.frame(replace.non.finite = T) %>% 
+  mutate(Zdefault = if_else(ZScore.value < 1.8, true = 1, false = 0)) %>%
+  filter(year != 2017) %>% na.omit()
+
+## Obtenemos la matriz de confusión donde los datos de referencia son los default de la primera parte, y la predicción
+## son los datos del ZScore de Altman.
+confusionMatrix(as.factor(Zscore$Zdefault), reference = as.factor(Zscore$default), positive = "1", mode = "everything")
+```
+
+**El modelo ZScore de Altman no ofrece mejores resultados que el modelo logistico que propongo al principio.**
+
+## Roc Curve para Zscore de Altman
+```{r}
+rocurve_zscore <- roc.curve(scores.class0 = Zscore$Zdefault, scores.class1 = Zscore$default, curve = T)
+##Obtenemos un area bajos la curva
+rocurve_zscore
+
+##Ploteamos el ROC
+plot(rocurve_zscore)
+```
+
+**Obtenemos un área debajo de la curva de 63.9% muy por debajo de los 85% que ofrece nuestro modelo lógistico, el desempeño de la ZScore de Altman no es nada bueno.**
+
+####3. Predicción sobre una nueva empresa, usando nuestro modelo "logistic.M2"
+```{r}
+## Generamos los datos de la empresa propuesta
+empresa.zxs <- data.frame(empresa.zxs=c(ratio_endeudamiento = 4117.194 / 15039.12,
+         roa = 1122.191 / 15039.12,
+         roe = 1122.191 / 10921.92))
+empresa.zxs <- t(empresa.zxs)
+### Predicción de los datos sobre los datos de la empresa ZXS Modelo lógistico:
+pred.logistic.M2.zxs <- predict(logistic.M2, newdata = empresa.zxs, type = "prob")
+pred.logistic.M2.zxs
+```
+
+**Si mantemos el punto de corte que he propuesto en el ejercicio anterior, como entidad bancaria si que le concederia un crédito ya que su probabilidad de default es menor que 0.05.**
+
+
+```{r}
+data2017 <- data.panel.p %>% filter(year == 2017)
+predit.2017 <- predict(logistic.M2, newdata = data2017, type = "prob")
+PD <- predit.2017$Yes*data2017$acreed_lp
+sum(PD, na.rm = T)
+dnorm(pd)
+```
+
+
+
+
+
+
